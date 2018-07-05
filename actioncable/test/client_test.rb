@@ -26,7 +26,7 @@ WebSocket::Frame::Data.prepend Module.new {
 #
 ####
 
-class ClientTest < ActionCable::TestCase
+module ClientTest
   WAIT_WHEN_EXPECTING_EVENT = 2
   WAIT_WHEN_NOT_EXPECTING_EVENT = 0.5
 
@@ -62,41 +62,6 @@ class ClientTest < ActionCable::TestCase
 
     # and now the "real" setup for our test:
     server.config.disable_request_forgery_protection = true
-  end
-
-  def with_puma_server(rack_app = ActionCable.server, port = 3099)
-    server = ::Puma::Server.new(rack_app, ::Puma::Events.strings)
-    server.add_tcp_listener "127.0.0.1", port
-    server.min_threads = 1
-    server.max_threads = 4
-
-    thread = server.run
-
-    begin
-      yield port
-
-    ensure
-      server.stop
-
-      begin
-        thread.join
-
-      rescue IOError
-        # Work around https://bugs.ruby-lang.org/issues/13405
-        #
-        # Puma's sometimes raising while shutting down, when it closes
-        # its internal pipe. We can safely ignore that, but we do need
-        # to do the step skipped by the exception:
-        server.binder.close
-
-      rescue RuntimeError => ex
-        # Work around https://bugs.ruby-lang.org/issues/13239
-        raise unless ex.message =~ /can't modify frozen IOError/
-
-        # Handle this as if it were the IOError: do the same as above.
-        server.binder.close
-      end
-    end
   end
 
   class SyncClient
@@ -205,7 +170,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_single_client
-    with_puma_server do |port|
+    with_cable_server do |port|
       c = websocket_client(port)
       assert_equal({ "type" => "welcome" }, c.read_message)  # pop the first welcome message off the stack
       c.send_message command: "subscribe", identifier: JSON.generate(channel: "ClientTest::EchoChannel")
@@ -217,7 +182,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_interacting_clients
-    with_puma_server do |port|
+    with_cable_server do |port|
       clients = concurrently(10.times) { websocket_client(port) }
 
       barrier_1 = Concurrent::CyclicBarrier.new(clients.size)
@@ -240,7 +205,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_many_clients
-    with_puma_server do |port|
+    with_cable_server do |port|
       clients = concurrently(100.times) { websocket_client(port) }
 
       concurrently(clients) do |c|
@@ -256,7 +221,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_disappearing_client
-    with_puma_server do |port|
+    with_cable_server do |port|
       c = websocket_client(port)
       assert_equal({ "type" => "welcome" }, c.read_message)  # pop the first welcome message off the stack
       c.send_message command: "subscribe", identifier: JSON.generate(channel: "ClientTest::EchoChannel")
@@ -275,7 +240,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_unsubscribe_client
-    with_puma_server do |port|
+    with_cable_server do |port|
       app = ActionCable.server
       identifier = JSON.generate(channel: "ClientTest::EchoChannel")
 
@@ -300,7 +265,7 @@ class ClientTest < ActionCable::TestCase
   end
 
   def test_server_restart
-    with_puma_server do |port|
+    with_cable_server do |port|
       c = websocket_client(port)
       assert_equal({ "type" => "welcome" }, c.read_message)
       c.send_message command: "subscribe", identifier: JSON.generate(channel: "ClientTest::EchoChannel")

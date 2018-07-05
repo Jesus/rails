@@ -8,7 +8,7 @@ module ActionCable
     # This class is heavily based on faye-websocket-ruby
     #
     # Copyright (c) 2010-2015 James Coglan
-    class ClientSocket # :nodoc:
+    class ClientFayeSocket # :nodoc:
       def self.determine_url(env)
         scheme = secure_request?(env) ? "wss:" : "ws:"
         "#{ scheme }//#{ env['HTTP_HOST'] }#{ env['REQUEST_URI'] }"
@@ -24,6 +24,10 @@ module ActionCable
         false
       end
 
+      def self.accept(env, event_target, event_loop, protocols)
+        new(env, event_target, event_loop, protocols) if ::WebSocket::Driver.websocket?(env)
+      end
+
       CONNECTING = 0
       OPEN       = 1
       CLOSING    = 2
@@ -36,7 +40,7 @@ module ActionCable
         @event_target = event_target
         @event_loop   = event_loop
 
-        @url = ClientSocket.determine_url(@env)
+        @url = ClientFayeSocket.determine_url(@env)
 
         @driver = @driver_started = nil
         @close_params = ["", 1006]

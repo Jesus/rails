@@ -76,6 +76,10 @@ group :cable do
   gem "blade", require: false, platforms: [:ruby]
   gem "blade-sauce_labs_plugin", require: false, platforms: [:ruby]
   gem "sprockets-export", require: false
+
+  platforms :mri do
+    gem "iodine", ">= 0.7.3", require: false
+  end
 end
 
 # Active Storage
@@ -108,6 +112,7 @@ group :test do
   platforms :mri do
     gem "stackprof"
     gem "byebug"
+    gem "iodine"
   end
 
   gem "benchmark-ips"

@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require "websocket/driver"
-
 module ActionCable
   module Connection
     # Wrap the real socket to minimize the externally-presented API
     class WebSocket # :nodoc:
       def initialize(env, event_target, event_loop, protocols: ActionCable::INTERNAL[:protocols])
-        @websocket = ::WebSocket::Driver.websocket?(env) ? ClientSocket.new(env, event_target, event_loop, protocols) : nil
+        @websocket = self.class.new_client(env, event_target, event_loop, protocols)
       end
 
       def possible?
@@ -32,6 +30,10 @@ module ActionCable
 
       def rack_response
         websocket.rack_response
+      end
+
+      def self.new_client(env, event_target, event_loop, protocols)
+        ClientRackSocket.accept(env, event_target, event_loop, protocols) || ClientFayeSocket.accept(env, event_target, event_loop, protocols)
       end
 
       private
