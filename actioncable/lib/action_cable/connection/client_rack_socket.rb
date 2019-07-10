@@ -6,13 +6,13 @@ module ActionCable
     #
     # The `rack.upgrade?` approach detailed here: https://github.com/rack/rack/pull/1272
     class ClientRackSocket # :nodoc:
-      def self.accept(env, event_target, event_loop, protocols)
-        new(env, event_target, event_loop, protocols) if env["rack.upgrade?"] == :websocket
+      def self.accept(env, event_target, protocols)
+        new(env, event_target, protocols) if env["rack.upgrade?"] == :websocket
       end
 
       attr_reader :protocol
 
-      def initialize(env, event_target, event_loop, protocols)
+      def initialize(env, event_target, protocols)
         env["rack.upgrade"] = self
         @event_target = event_target
         @protocol = select_protocol(env, protocols)

@@ -33,7 +33,8 @@ module ActionCable
       end
 
       def self.new_client(env, event_target, event_loop, protocols)
-        ClientRackSocket.accept(env, event_target, event_loop, protocols) || ClientFayeSocket.accept(env, event_target, event_loop, protocols)
+        ClientRackSocket.accept(env, event_target, protocols) or
+          ClientFayeSocket.accept(env, event_target, event_loop, protocols)
       end
 
       private
